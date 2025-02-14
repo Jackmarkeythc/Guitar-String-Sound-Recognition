@@ -40,14 +40,10 @@
             display: block;
             margin: 20px auto;
         }
-        canvas {
-            display: block;
-            margin: 0 auto;
-        }
     </style>
 </head>
 <body>
-    <h1>Guitar String Sound Play & Ear Training</h1>
+    <h1>Guitar String Sound Recognition & Ear Training</h1>
     <div class="tuner">
         <button class="string" id="E">E (6th)</button>
         <button class="string" id="A">A (5th)</button>
@@ -74,49 +70,36 @@
             .then(stream => {
                 const source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
-                visualizeSound();
+                analyzeSound();
             })
             .catch(err => {
                 console.error("Microphone access denied", err);
                 document.getElementById("result").textContent = "Microphone access denied. Please allow microphone access.";
             });
         
-        function visualizeSound() {
-            const canvas = document.getElementById('visualizer');
-            const canvasCtx = canvas.getContext('2d');
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function draw() {
-                requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
-
-                canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let barHeight;
-                let x = 0;
-
-                for (let i = 0; i < bufferLength; i++) {
-                    barHeight = dataArray[i];
-                    canvasCtx.fillStyle = 'rgb(' + (barHeight + 100) + ',50,50)';
-                    canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-                    x += barWidth + 1;
-                }
+        function analyzeSound() {
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
             }
-
-            draw();
+            
+            const avgFrequency = sum / dataArray.length;
+            document.getElementById("result").textContent = "Detected Frequency: " + avgFrequency.toFixed(2) + " Hz";
+            
+            requestAnimationFrame(analyzeSound);
         }
         
-        // Guitar String Sounds
+        // Preload Guitar String Sounds
         const stringSounds = {
-            'E': 'sounds/E6.mp3',
-            'A': 'sounds/A5.mp3',
-            'D': 'sounds/D4.mp3',
-            'G': 'sounds/G3.mp3',
-            'B': 'sounds/B2.mp3',
-            'e': 'sounds/E1.mp3'
+            'E': new Audio('sounds/E6.mp3'),
+            'A': new Audio('sounds/A5.mp3'),
+            'D': new Audio('sounds/D4.mp3'),
+            'G': new Audio('sounds/G3.mp3'),
+            'B': new Audio('sounds/B2.mp3'),
+            'e': new Audio('sounds/E1.mp3')
         };
         
         document.querySelectorAll('.string').forEach(button => {
@@ -124,7 +107,9 @@
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
-                const sound = new Audio(stringSounds[this.id]);
+                
+                const sound = stringSounds[this.getAttribute("id")];
+                sound.currentTime = 0; // Reset sound to start on every click
                 sound.play();
             });
         });

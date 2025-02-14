@@ -1,0 +1,16 @@
+{
+  "name": "guitar-string-sound-recognition",
+  "version": "1.0.0",
+  "description": "Guitar String Sound Recognition & Ear Training",
+  "main": "index.js",
+  "dependencies": {
+    "three": "^0.128.0",
+    "three-gltf-loader": "^1.112.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "http-server ."
+  },
+  "author": "",
+  "license": "ISC"
+}

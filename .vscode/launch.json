@@ -2,9 +2,10 @@
     "configurations": [
         {
             "type": "chrome",
-            "name": "http://127.0.0.1:3000/index.html",
+            "name": "Launch Guitar String Sound Recognition",
             "request": "launch",
-            "url": "http://127.0.0.1:3000/index.html"
+            "url": "http://127.0.0.1:8080/index.html",
+            "webRoot": "${workspaceFolder}"
         }
     ]
 }

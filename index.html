@@ -17,6 +17,10 @@
         h1 {
             margin-top: 20px;
         }
+        .description {
+            margin: 10px auto;
+            font-size: 18px;
+        }
         .tuner {
             margin: 20px auto;
         }
@@ -42,10 +46,15 @@
             display: block;
             margin: 20px auto;
         }
+        .tuning-indicator {
+            margin: 10px auto;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
     <h1>Guitar String Sound Play</h1>
+    <p class="description">Use this tool to tune your guitar strings. Click on a string button to play the corresponding sound.</p>
     <div class="tuner">
         <button class="string" id="E">E (6th)</button>
         <button class="string" id="A">A (5th)</button>
@@ -54,9 +63,12 @@
         <button class="string" id="B">B (2nd)</button>
         <button class="string" id="e">e (1st)</button>
     </div>
-    <canvas id="visualizer"></canvas>
+    <div id="visualizer"></div>
     <p id="result">Play a string to detect the sound!</p>
+    <p class="tuning-indicator" id="tuning-indicator">Tuning: -</p>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="visualizer.js"></script>
     <script>
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const analyser = audioContext.createAnalyser();
@@ -66,6 +78,7 @@
             .then(stream => {
                 const source = audioContext.createMediaStreamSource(stream);
                 source.connect(analyser);
+                autoCalibrate();
                 visualizeSound();
             })
             .catch(err => {
@@ -73,32 +86,39 @@
                 document.getElementById("result").textContent = "Microphone access denied. Please allow microphone access.";
             });
         
+        function autoCalibrate() {
+            // Auto-calibration logic to adjust microphone sensitivity
+            analyser.minDecibels = -90;
+            analyser.maxDecibels = -10;
+            analyser.smoothingTimeConstant = 0.85;
+        }
+        
         function visualizeSound() {
-            const canvas = document.getElementById('visualizer');
-            const canvasCtx = canvas.getContext('2d');
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            updateVisualizer(dataArray);
+            requestAnimationFrame(visualizeSound);
+        }
+        
+        function detectString(dataArray) {
+            const avgFrequency = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            const tuningIndicator = document.getElementById("tuning-indicator");
+            const result = document.getElementById("result");
 
-            function draw() {
-                requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
-
-                canvasCtx.fillStyle = 'rgb(0, 0, 0)';
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-                const barWidth = (canvas.width / bufferLength) * 2.5;
-                let barHeight;
-                let x = 0;
-
-                for (let i = 0; i < bufferLength; i++) {
-                    barHeight = dataArray[i];
-                    canvasCtx.fillStyle = 'rgb(' + (barHeight + 100) + ',50,50)';
-                    canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-                    x += barWidth + 1;
+            if (avgFrequency > 0) {
+                result.textContent = `Detected Frequency: ${avgFrequency.toFixed(2)} Hz`;
+                // Add logic to determine if the string is flat, sharp, or in tune
+                if (avgFrequency < 82) {
+                    tuningIndicator.textContent = "Tuning: Flat";
+                } else if (avgFrequency > 329) {
+                    tuningIndicator.textContent = "Tuning: Sharp";
+                } else {
+                    tuningIndicator.textContent = "Tuning: In Tune";
                 }
+            } else {
+                result.textContent = "No sound detected, try again.";
+                tuningIndicator.textContent = "Tuning: -";
             }
-
-            draw();
         }
         
         // Guitar String Sounds
